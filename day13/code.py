@@ -106,13 +106,14 @@ def get_patterns(input):
     patterns = [[]]
     for line in input:
         if line != "\n":
-            patterns[-1].append(line.replace("\n", ""))
+            patterns[-1].append(list(line.replace("\n", "")))
         else:
             patterns.append([])
     return patterns
 
 
-def find_horizontal_line(pattern):
+def find_horizontal_lines(pattern):
+    lines = []
     for mid in range(0, len(pattern) - 1):
         found = True
         distance = 0
@@ -122,11 +123,12 @@ def find_horizontal_line(pattern):
                 break
             distance += 1
         if found:
-            return mid + 1
-    return 0
+            lines.append(mid + 1)
+    return lines
 
 
-def find_vertical_line(pattern):
+def find_vertical_lines(pattern):
+    lines = []
     for mid in range(0, len(pattern[0]) - 1):
         found = True
         distance = 0
@@ -138,8 +140,8 @@ def find_vertical_line(pattern):
                 break
             distance += 1
         if found:
-            return mid + 1
-    return 0
+            lines.append(mid + 1)
+    return lines
 
 
 def compute_part_1(input_file_name="input.txt"):
@@ -147,17 +149,117 @@ def compute_part_1(input_file_name="input.txt"):
     patterns = get_patterns(input)
     summary = 0
     for pattern in patterns:
-        summary += find_horizontal_line(pattern) * 100 + find_vertical_line(pattern)
+        horizontal_line = find_horizontal_lines(pattern)
+        vertical_line = find_vertical_lines(pattern)
+        summary += (
+            horizontal_line[0] * 100 if len(horizontal_line) > 0 else vertical_line[0]
+        )
     return summary
 
 
 # Your puzzle answer was 30802.
 
+# --- Part Two ---
+# You resume walking through the valley of mirrors and - SMACK! - run
+# directly into one. Hopefully nobody was watching, because that must have
+# been pretty embarrassing.
+
+# Upon closer inspection, you discover that every mirror has exactly one
+# smudge: exactly one . or # should be the opposite type.
+
+# In each pattern, you'll need to locate and fix the smudge that causes a
+# different reflection line to be valid. (The old reflection line won't
+# necessarily continue being valid after the smudge is fixed.)
+
+# Here's the above example again:
+
+# #.##..##.
+# ..#.##.#.
+# ##......#
+# ##......#
+# ..#.##.#.
+# ..##..##.
+# #.#.##.#.
+
+# #...##..#
+# #....#..#
+# ..##..###
+# #####.##.
+# #####.##.
+# ..##..###
+# #....#..#
+
+# The first pattern's smudge is in the top-left corner. If the top-left #
+# were instead ., it would have a different, horizontal line of reflection:
+
+# 1 ..##..##. 1
+# 2 ..#.##.#. 2
+# 3v##......#v3
+# 4^##......#^4
+# 5 ..#.##.#. 5
+# 6 ..##..##. 6
+# 7 #.#.##.#. 7
+
+# With the smudge in the top-left corner repaired, a new horizontal line of
+# reflection between rows 3 and 4 now exists. Row 7 has no corresponding
+# reflected row and can be ignored, but every other row matches exactly:
+# row 1 matches row 6, row 2 matches row 5, and row 3 matches row 4.
+
+# In the second pattern, the smudge can be fixed by changing the fifth symbol
+# on row 2 from . to #:
+
+# 1v#...##..#v1
+# 2^#...##..#^2
+# 3 ..##..### 3
+# 4 #####.##. 4
+# 5 #####.##. 5
+# 6 ..##..### 6
+# 7 #....#..# 7
+
+# Now, the pattern has a different horizontal line of reflection between rows
+# 1 and 2.
+
+# Summarize your notes as before, but instead use the new different
+# reflection lines. In this example, the first pattern's new horizontal line
+# has 3 rows above it and the second pattern's new horizontal line has 1 row
+# above it, summarizing to the value 400.
+
+# In each pattern, fix the smudge and find the different line of reflection.
+# What number do you get after summarizing the new reflection line in each
+# pattern in your notes?
+
+
+def find_different_reflection_value(pattern):
+    ohrv = find_horizontal_lines(pattern)
+    ohrv = ohrv[0] * 100 if len(ohrv) > 0 else 0
+    ovrv = find_vertical_lines(pattern)
+    ovrv = ovrv[0] if len(ovrv) > 0 else 0
+    for i in range(len(pattern)):
+        for j in range(len(pattern[i])):
+            pattern[i][j] = "#" if pattern[i][j] == "." else "."
+            hrvs = find_horizontal_lines(pattern)
+            vrrs = find_vertical_lines(pattern)
+            pattern[i][j] = "#" if pattern[i][j] == "." else "."  # switch back
+            for hrv in hrvs:
+                hrv *= 100
+                if hrv > 0 and hrv != ohrv:
+                    return hrv
+            for vrr in vrrs:
+                if vrr > 0 and vrr != ovrv:
+                    return vrr
+    return -1
+
 
 def compute_part_2(input_file_name="input.txt"):
     input = read_input(input_file_name)
-    return 0
+    patterns = get_patterns(input)
+    summary = 0
+    for pattern in patterns:
+        summary += find_different_reflection_value(pattern)
+    return summary
 
+
+# Your puzzle answer was 37876.
 
 if __name__ == "__main__":
     print(f"PART 1: {compute_part_1()}")
